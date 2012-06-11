@@ -23,13 +23,17 @@ duplicate -d /opt/xls -c 1,4
         compare all xls files of "/opt/xls" the column of 1~4
 """
 
+separator = "~!@#$%^"
+
 def duplicate_directory(directory, column_begin, column_end):
+	print("sorry, temporary unrealized")
+
 	return True
 
 def duplicate_file_list(file_list, column_begin, column_end):
 	files = file_list.split(" ")
 
-	index_table = []
+	index_table = {}
 
 	for fname in files[0:]:
 		print(fname)
@@ -43,13 +47,12 @@ def duplicate_file_list(file_list, column_begin, column_end):
 		    return False
 
 		for i in range(1, sheet.nrows):
-			cel_list = []
+			cel_list_key = ""
 			for j in range(column_begin - 1, column_end):
-				cel_list.append(sheet.cell_value(i, j))
+				cel_list_key += sheet.cell_value(i, j) + separator
 
-			print(cel_list)
-			# index_table[cel_list] = {fname, i}
-			# print(index_table[cel_list])
+			index_table[cel_list_key] = [fname, i, cel_list_key]
+			print(index_table[cel_list_key])
 
 	return True
 
@@ -60,14 +63,6 @@ def get_column(column):
 	except:
 		print(usage_msg)
 		sys.exit(2)
-
-def valid_parameter(file_list, directory, column):
-	if file_list == "" and directory == "":
-		return False
-	elif column == "":
-		return False
-
-	return True
 
 def duplicate(file_list, directory, column):
 	if file_list == "" and directory == "":

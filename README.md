@@ -1,4 +1,4 @@
 duplicate-cell
 ==============
 
-for Excel
+find duplicate cell for Excel.
