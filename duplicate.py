@@ -1,8 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-import math
-import struct
-import shutil
 import os
 import getopt
 import sys
@@ -10,33 +7,42 @@ import xlrd
 
 usage_msg = """\
 
-USAGE: duplicate [-f excel file list] [-d excel directory] [-c column range]
+USAGE: duplicate [-f excel file list] [-d excel directory] [-c column range] [-p only print row when duplicate count]
 
   -h	print this help message and exit
 
 Examples:
 
-duplicate -f "a.xls b.xls c.xls" -c 1,4
-        compare a.xls & b.xls & c.xls the column of 1~4
+duplicate -f "a.xls b.xls c.xls" -c 1,4 -p 1
+        find duplicate rows from a.xls & b.xls & c.xls, and order by the column of 1~4 and only print row when duplicate count > 1
 
-duplicate -d /opt/xls -c 1,4
-        compare all xls files of "/opt/xls" the column of 1~4
+duplicate -d /opt/xls -c 1,4 -p 2
+        find duplicate rows from "/opt/xls", and order by the column of 1~4 and only print row when duplicate count > 2
 """
 
-separator = "~!@#$%^"
+separator = "---"
 
-def duplicate_directory(directory, column_begin, column_end):
+def duplicate_stat(index_table, duplicate_count):
+	id = 1
+
+	for k, v in sorted(index_table.iteritems()):
+		if len(v) >= duplicate_count:
+			print str(id)+". " + k
+			id += 1
+
+			print '  total ' + str(len(v)) + " lines:"
+			for obj in v:
+				print "  " + obj[0] + "'s " + str(obj[1]) + " line"
+
+def duplicate_directory(directory, column_begin, column_end, index_table):
 	print("sorry, temporary unrealized")
-
 	return True
 
-def duplicate_file_list(file_list, column_begin, column_end):
+def duplicate_file_list(file_list, column_begin, column_end, index_table):
 	files = file_list.split(" ")
 
-	index_table = {}
-
 	for fname in files[0:]:
-		print(fname)
+		print "reading", fname,
 
 		workbook = xlrd.open_workbook(fname)
 		sheet_number = range(workbook.nsheets)
@@ -47,12 +53,19 @@ def duplicate_file_list(file_list, column_begin, column_end):
 		    return False
 
 		for i in range(1, sheet.nrows):
-			cel_list_key = ""
+			row_key = ""
 			for j in range(column_begin - 1, column_end):
-				cel_list_key += sheet.cell_value(i, j) + separator
+				row_key += str(sheet.cell_value(i, j)).strip() + separator
 
-			index_table[cel_list_key] = [fname, i, cel_list_key]
-			print(index_table[cel_list_key])
+			if row_key != "":
+				if row_key in index_table:
+					index_table[row_key].append([fname, i + 1])
+				else:
+					index_table[row_key] = [[fname, i + 1]]
+
+				print ".",
+
+		print ""
 
 	return True
 
@@ -64,24 +77,29 @@ def get_column(column):
 		print(usage_msg)
 		sys.exit(2)
 
-def duplicate(file_list, directory, column):
+def duplicate(file_list, directory, column, show_count):
 	if file_list == "" and directory == "":
 		print(usage_msg)
 	else:
 		column_begin, column_end = get_column(column)
 
+		index_table = {}
+
 		if file_list == "":
-			duplicate_directory(directory, column_begin, column_end)
+			duplicate_directory(directory, column_begin, column_end, index_table)
 		else:
-			duplicate_file_list(file_list, column_begin, column_end)
+			duplicate_file_list(file_list, column_begin, column_end, index_table)
+
+		duplicate_stat(index_table, show_count)
 
 def main(argv):
 	try:
-		opts, args = getopt.getopt(argv[1:], "f:d:c:h:")
+		opts, args = getopt.getopt(argv[1:], "f:d:c:p:h:")
 
 		file_list = ""
 		directory = ""
 		column = "1,4"
+		duplicate_count = 0		
 
 		for opt, arg in opts:
 			if opt == '-f':
@@ -90,11 +108,13 @@ def main(argv):
 				directory = arg
 			elif opt == '-c':
 				column = arg
+			elif opt == '-p':
+				duplicate_count = int(arg)
 			elif opt =='-h':
 				print(usage_msg)
 				sys.exit(2)
 
-		duplicate(file_list, directory, column)
+		duplicate(file_list, directory, column, duplicate_count)
 	except getopt.error, msg:
 		sys.stderr.write("Error: %s\n" % str(msg))
 		sys.stderr.write(usage_msg)
